@@ -1,52 +1,59 @@
 import time
 import math as m
+import terrain_generation as terraingen
+import random as rand
 
 #Sim parameters
-
+map_size = 100
 dt = 0.02 #Fixed timestep (50 Hz)
 sim_time = 5.0 #num of seconds
 numSteps = int(dt * sim_time)
 
+startX = rand(map_size)
+startY = rand(map_size)
 
 #Robot States
 x = 0.0
 y = 0.0
+z = 0.0
 yaw = 0.0
+stepSize = 0.2 #Max possible z increase the robot can do in 1 iteration
 velocity = 0.0 #m/s
 
 #Control Inputs
 linearVelo = 1.0 # m/sec
 yawRate = 0.3 # rads/sec
 
-def simulationLoop():
+#Map
+cells = terraingen.perlin_terrain_gen(map_size)
 
-    global x, y, yaw, velocity
+def simulationLoop():
+    global x, y, z, yaw, velocity
 
     #Updates the robot states
     for i in range(numSteps):
 
         x += velocity * m.cos(yaw) * dt
         y += velocity * m.sin(yaw) * dt
+        z = cells[m.floor(x)][m.floor(y)]
         yaw += yawRate * dt
         velocity = linearVelo
-    
+
+
 
 def stuff(cells, startX, startY, endX, endY, rows, cols):
     #TODO
     pass
 
-def inRange(cells, row, col):
-    if row < 0 or row >= len(cells) or col < 0 or col >= len(cells[0]):
-        return False
-    return True
-
-
 def mazeSolve(cells, start, end):
-    return mazeSolveRecursively(cells, start, end)
+    return mazeSolveRecursive(cells, start, end)
 
+def mazeSolveRecursive(cells, row, col, lastZ, visited=None):
 
+    currZ = cells[row][col]
+    if(abs(lastZ - currZ) > stepSize):
+        pass
 
-def mazeSolveRecursively(cells, row, col, visited=None):
     if visited is None:
         visited = set()
 
@@ -57,21 +64,14 @@ def mazeSolveRecursively(cells, row, col, visited=None):
         return True
     
     visited.add((row, col))
-
-    # Check all directions; if any return True, propagate it up
-    if (mazeSolveRecursively(cells, row + 1, col, visited) or
-        mazeSolveRecursively(cells, row - 1, col, visited) or
-        mazeSolveRecursively(cells, row, col + 1, visited) or
-        mazeSolveRecursively(cells, row, col - 1, visited)):
+    if (mazeSolveRecursive(cells, row + 1, col, currZ, visited) or
+        mazeSolveRecursive(cells, row - 1, col, currZ, visited) or
+        mazeSolveRecursive(cells, row, col + 1, currZ, visited) or
+        mazeSolveRecursive(cells, row, col - 1, currZ, visited)):
         return True
-
     return False
-    
-    
 
-
-
-    
-
-
-    
+def inRange(cells, row, col):
+    if row < 0 or row >= len(cells) or col < 0 or col >= len(cells[0]):
+        return False
+    return True
