@@ -9,16 +9,19 @@ dt = 0.02 #Fixed timestep (50 Hz)
 sim_time = 5.0 #num of seconds
 numSteps = int(dt * sim_time)
 
-startX = rand(map_size)
-startY = rand(map_size)
+startX = rand.randint(0, map_size - 1)
+startY = rand.randint(0, map_size - 1)
+
+endX = rand.randint(0, map_size - 1)
+endY = rand.randint(0, map_size - 1)
 
 #Robot States
-x = 0.0
-y = 0.0
+x = float(startX)
+y = float(startY)
 z = 0.0
 yaw = 0.0
 stepSize = 0.2 #Max possible z increase the robot can do in 1 iteration
-velocity = 0.0 #m/s
+velocity = 0.0
 
 #Control Inputs
 linearVelo = 1.0 # m/sec
@@ -31,7 +34,7 @@ def simulationLoop():
     global x, y, z, yaw, velocity
 
     #Updates the robot states
-    for i in range(numSteps):
+    for _ in range(numSteps):
 
         x += velocity * m.cos(yaw) * dt
         y += velocity * m.sin(yaw) * dt
@@ -39,28 +42,34 @@ def simulationLoop():
         yaw += yawRate * dt
         velocity = linearVelo
 
+        ix, iy = int(x), int(y)
 
+        if inRange(cells, ix, iy):
+            z = cells[ix][iy]
 
-def stuff(cells, startX, startY, endX, endY, rows, cols):
+def stuff(cells, rows, cols):
     #TODO
     pass
 
 def mazeSolve(cells, start, end):
-    return mazeSolveRecursive(cells, start, end)
+    return mazeSolveRecursive(cells, start[0], start[1], cells[start[0]][start[1]], end)
 
-def mazeSolveRecursive(cells, row, col, lastZ, visited=None):
+def mazeSolveRecursive(cells, row, col, lastZ, end, visited=None):
+
+    if not inRange(cells, row, col):
+        return False
 
     currZ = cells[row][col]
     if(abs(lastZ - currZ) > stepSize):
-        pass
+        return False
 
     if visited is None:
         visited = set()
 
-    if not inRange(cells, row, col) or (row, col) in visited:
+    if (row, col) in visited:
         return False
 
-    if cells[row][col] == '$':
+    if cells[row][col] == end:
         return True
     
     visited.add((row, col))

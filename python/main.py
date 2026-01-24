@@ -1,7 +1,13 @@
 import sim_loop as loop 
-#import package to help view simulation
-import 
+
+if __name__ == "__main__":
+    #Runs the simulation loop
+    loop.simulationLoop
+
+    start = (loop.startX, loop.startY)
+    end = (loop.endX, loop.endY)
 
 
-#Runs the 
-loop.simulationLoop
+    canReach = loop.mazeSolve(loop.cells, start, end)
+
+    print("Can I reach the end?!: ", canReach)
