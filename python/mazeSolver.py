@@ -1,15 +1,15 @@
-import sim_loop as sim
+import simVariables as sim
 
 
-def mazeSolve(cells, start, end):
+def mazeSolve(cells, start, end, max_slope):
     path = []
-    found = mazeSolveRecursive(cells, start[0], start[1], cells[start[0]][start[1]], end, path, set())
+    found = mazeSolveRecursive(cells, start[0], start[1], cells[start[0]][start[1]], end, path, max_slope, set())
     if found:
         path.reverse()
         return path
     return None
 
-def mazeSolveRecursive(cells, row, col, lastZ, end, path, visited=None):
+def mazeSolveRecursive(cells, row, col, lastZ, end, path, max_slope, visited=None):
     if not inRange(cells, row, col):
         return False
 
@@ -20,20 +20,20 @@ def mazeSolveRecursive(cells, row, col, lastZ, end, path, visited=None):
         return False
     
     currZ = cells[row][col]
-    if(abs(lastZ - currZ) > sim.stepSize):
+    if(abs(lastZ - currZ) > max_slope):
         return False
     
     visited.add((row, col))
-    
+
 
     if (row, col) == end:
         path.append((row, col))
         return True
     
-    if (mazeSolveRecursive(cells, row + 1, col, currZ, end, path, visited) or
-        mazeSolveRecursive(cells, row - 1, col, currZ, end, path, visited) or
-        mazeSolveRecursive(cells, row, col + 1, currZ, end, path, visited) or
-        mazeSolveRecursive(cells, row, col - 1, currZ, end, path, visited)):
+    if (mazeSolveRecursive(cells, row + 1, col, currZ, end, path, max_slope,  visited) or
+        mazeSolveRecursive(cells, row - 1, col, currZ, end, path, max_slope, visited) or
+        mazeSolveRecursive(cells, row, col + 1, currZ, end, path, max_slope, visited) or
+        mazeSolveRecursive(cells, row, col - 1, currZ, end, path, max_slope, visited)):
         path.append((row, col))
         return True
     return False
