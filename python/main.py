@@ -6,6 +6,7 @@ import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from matplotlib import cm
+from ekf import EKF
 
 start = (sim.startX, sim.startY)
 end = (sim.endX, sim.endY)
@@ -13,6 +14,12 @@ end = (sim.endX, sim.endY)
 rows, cols = sim.cells.shape
 X, Y = np.meshgrid(range(cols), range(rows))
 Z = sim.cells
+
+
+ekf = EKF(np.array([sim.startX, sim.startY, 0.0, 0.0, 0.0]))
+true_x = []
+odo_x = []
+ekf_x = [] 
 
 path = ms.mazeSolve(sim.cells, start, end, sim.robot.step_size)
 if path is None:
@@ -65,7 +72,7 @@ robot, = ax.plot(
 
 
 #Create a path line object to animate as the robot finds a path
-path_line, = ax.plot([], [], [], color='red', linewidth=6)
+path_line, = ax.plot([], [], [], color='black', linewidth=12)
 
 # 2. Initialization function (optional, but good practice for a clean start)
 def init():
@@ -85,15 +92,40 @@ def animate(i):
 
     robot.set_marker((3, 0, yaw))
 
-    z = sim.cells[int(y), int(x)]  #changed
+    z = sim.cells[int(y), int(x)]  
 
+    #Deals with sensor readings
+    dt = sim.dt
+    sim.robot.step(dt, sim.cells)
+
+    #Get sensor readings
+    v_enc = sim.robot.read_encoders()
+    omega_imu, _ = sim.robot.read_imu()
+
+    #Get raw odometry
+    sim.robot.yaw += omega_imu * dt
+    odo_x_val = sim.robot.x + v_enc * np.cos(sim.robot.yaw) * dt
+    odo_y_val = sim.robot.y + v_enc * np.sin(sim.robot.yaw) * dt
+
+    #EKF Prediction
+    ekf.predict([v_enc, omega_imu], dt)
+
+    #Fake position measurements
+    z_meas = np.array([sim.robot.x, sim.robot.y])
+    ekf.update(z_meas)
+
+    true_x.append(sim.robot.x)
+    odo_x.append(odo_x_val)
+    ekf_x.append(ekf.x[0])
+
+    
     #Animates the robot
     robot.set_data([x], [y])
     robot.set_3d_properties([z])
 
     path_x = [p[0] for p in path[:i+1]]
     path_y = [p[1] for p in path[:i+1]]
-    path_z = [sim.cells[int(p[1]), int(p[0])]  for p in path[:i+1]]  #changed
+    path_z = [sim.cells[int(p[1]), int(p[0])]  for p in path[:i+1]]  
 
     path_line.set_data(path_x, path_y)
     path_line.set_3d_properties(path_z)
@@ -125,6 +157,14 @@ ax.plot(end_x, end_y + 0.6,
         color='red',
         markersize=40)
 
+#Plots state estimation.
+plt.figure()
+plt.plot(true_x, label="True")
+plt.plot(odo_x, label="Raw Odometry")
+plt.plot(ekf_x, label="EKF Estimate")
+plt.legend()
+plt.title("State Estimation Comparison")
+plt.show()
 
 # To display the animation in a window
 plt.show()
